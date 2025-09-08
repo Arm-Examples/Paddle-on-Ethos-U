@@ -10,13 +10,13 @@ usage() {
     echo "  -c, --confidence <score>    Specify the threshold of confidences."
     echo "Model types:"
     echo "  mv1                   MobileNetV1"
-    echo "  pplcnetv2             PP_LCNetV2"
+    echo "  pplcnetv2             PPLCNetV2"
     echo "  tinypose              PP_TinyPose"
     echo "  picodetv2             PICODetV2"
     echo "  blazeface             BlazeFace"
-    echo "  ppocr_det             PP_OCR_det"
+    echo "  ppocr_det             PPOCR_det"
     echo "  humansegv2            Humansegv2"
-    echo "  ppocr_rec             PP_OCR_rec"
+    echo "  ppocr_rec             PPOCR_rec"
     echo "  ppocr_layout          PP_OCR_layout"
     echo "Example:"
     echo "  $0 --model=mv1 --pic=./data/1.jpg"
@@ -107,92 +107,33 @@ fi
 echo "Using model Type: $MODEL_TYPE"
 echo "Using Input File: $PIC_PATH"
 
-download_nb() {
-  if [ "$#" -ne 2 ]; then
-    echo "ERR: Params not currect!" >&2
-    echo "Usage: cmd <output_dir> <URL>" >&2
-    return 1
-  fi
-
-  local outputdir="$1"
-  local url="$2"
-
-  local filename=$(basename "${url%%\?*}")
-
-  if [ ! -d "$outputdir" ]; then
-    echo "DIR: '$outputdir' not exist, creating..."
-    mkdir -p "$outputdir"
-    if [ $? -ne 0 ]; then
-      echo "ERR: Can not create DIR: '$outputdir'." >&2
-      return 1
-    fi
-  fi
-
-  local output_path="$outputdir/$filename"
-  echo "Read to download..."
-  echo "  - From: $url"
-  echo "  - To: $output_path"
-
-  if command -v curl &> /dev/null; then
-    curl -L -sS -# -o "$output_path" "$url"
-  else
-    echo "Err: No CMD 'curl'" >&2
-    return 1
-  fi
-
-  if [ $? -eq 0 ]; then
-    echo "SUCC: Download to: $output_path"
-    ls -lh "$output_path"
-  else
-    echo "ERR: Download failed" >&2
-    rm -f "$output_path"
-    return 1
-  fi
-}
-
 mv1_preprocess() {
     echo "Running preprocess steps for MobileNetV1..."
-
-    echo "Download mv1"
-    download_nb ./download_nb https://huggingface.co/Alisson-Ason/arm-paddle/resolve/main/paddle_lite_models/mobilenetv1_int8_opt.nb?download=true
-    # generate input_tensor.bin and copy the vela.bin from model zoo
+    # Convert model to generate vela.bin
     pushd readnb
     echo "Build vela"
-    python write_model.py --model_path ../download_nb/mobilenetv1_int8_opt.nb --out_dir ../model_zoo/MobileNetV1_infer_int8/ --remove_op_id 32 --do_vela
-    #python write_model.py --model_path ../model_zoo/MobileNetV1_infer_int8/mobilenetv1_int8_opt.nb --out_dir ../model_zoo/MobileNetV1_infer_int8/ --remove_op_id 32
+    python write_model.py --model_path ../model_zoo/MobileNetV1_infer_int8/mobilenetv1_int8_opt.nb --out_dir ../model_zoo/MobileNetV1_infer_int8/ --remove_op_id 32 --do_vela
     popd
-
-    echo "cp -rf model_zoo/MobileNetV1_infer_int8/out_vela.bin verify/vela.bin"
     cp -rf model_zoo/MobileNetV1_infer_int8/out_vela.bin verify/vela.bin
-
+    # preprocess
     python model_zoo/MobileNetV1_infer_int8/mv1_preprocess_load.py $PIC_PATH
 }
 
 pplcnetv2_preprocess() {
-    echo "Running preprocess steps for PP-LCNetV2..."
-    # generate input_tensor.bin and copy the vela.bin from model zoo
-    # cp -rf model_zoo/PPLCNetV2_infer_int8/vela.bin verify/vela.bin
-    echo "Download pplcnet"
-    download_nb ./download_nb https://huggingface.co/Alisson-Ason/arm-paddle/resolve/main/paddle_lite_models/PPLCNetV2_base_infer_int8_opt.nb?download=true
+    echo "Running preprocess steps for PPLCNetV2..."
     pushd readnb
+    # Convert model to generate vela.bin
     echo "Build vela"
-    python write_model.py --model_path ../download_nb/PPLCNetV2_base_infer_int8_opt.nb --out_dir ../model_zoo/PPLCNetV2_infer_int8/ --remove_op_id 85 --do_vela
-    #python write_model.py --model_path ../model_zoo/PPLCNetV2_infer_int8/PPLCNetV2_base_infer_int8_opt.nb --out_dir ../model_zoo/PPLCNetV2_infer_int8/ --remove_op_id 85 --do_vela
+    python write_model.py --model_path ../model_zoo/PPLCNetV2_infer_int8/PPLCNetV2_base_infer_int8_opt.nb --out_dir ../model_zoo/PPLCNetV2_infer_int8/ --remove_op_id 85 --do_vela
     popd
-
-    echo "cp -rf model_zoo/PPLCNetV2_infer_int8/out_vela.bin verify/vela.bin"
     cp -rf model_zoo/PPLCNetV2_infer_int8/out_vela.bin verify/vela.bin
-
+    # preprocess
     python model_zoo/PPLCNetV2_infer_int8/pplc_preprocess_load.py $PIC_PATH
 }
 
 pp_tinypose_preprocess() {
     echo "Running preprocess steps for PP-TinyPose..."
     # generate input_tensor.bin and copy the vela.bin from model zoo
-
-    echo "Download tinypose"
-    download_nb ./download_nb https://huggingface.co/Alisson-Ason/arm-paddle/resolve/main/paddle_lite_models/PP_TinyPose_128x96_qat_dis_nopact_opt.nb?download=true
-
     pushd readnb
     python write_model.py --model_path ../download_nb/PP_TinyPose_128x96_qat_dis_nopact_opt.nb --out_dir ../model_zoo/PP_TinyPose_128x96_qat_dis_nopact_opt/
 
@@ -206,12 +147,6 @@ pp_tinypose_preprocess() {
     cp ../download_nb/out_vela.bin ../download_nb/vela_part2.bin
     popd
 
-    # not pass
-    #cp -rf model_zoo/PP_TinyPose_128x96_qat_dis_nopact_opt/vela_part1_1.bin verify/vela.bin
-    #cp -rf model_zoo/PP_TinyPose_128x96_qat_dis_nopact_opt/vela_part1_2.bin verify/vela2.bin
-    #cp -rf model_zoo/PP_TinyPose_128x96_qat_dis_nopact_opt/vela_part1_3.bin verify/vela3.bin
-    #cp -rf model_zoo/PP_TinyPose_128x96_qat_dis_nopact_opt/vela_part2.bin verify/vela4.bin
-
     cp -rf download_nb/vela_part1_1.bin verify/vela.bin
     cp -rf download_nb/vela_part1_2.bin verify/vela2.bin
     cp -rf download_nb/vela_part1_3.bin verify/vela3.bin
@@ -221,20 +156,17 @@ pp_tinypose_preprocess() {
 
 picodetv2_preprocess() {
     echo "Running preprocess steps for PICODetV2..."
-    mkdir -p model_vela
-
-    if [ ! -e "./readnb/test_asset/picodet/g_picodetv2_relu6_coco_no_fuse.json" ]; then
-        echo "Please put generate model json file into ./readnb/test_asset/picodet/g_picodetv2_relu6_coco_no_fuse.json"
-        echo "Then 'patch -p0 g_picodetv2_relu6_coco_no_fuse.json < g_picodetv2.patch'"
+    # Convert model to generate vela.bin
+    pushd readnb
+    echo "Build vela"
+    if [ ! -e "../model_zoo/PicoDetV2_infer_int8/g_picodetv2_relu6_coco_no_fuse.json" ]; then
+        echo "Please put generated model json file 'g_picodetv2_relu6_coco_no_fuse.json' into 'model_zoo/PicoDetV2_infer_int8' directory"
+        echo "Then 'patch -p0 model_zoo/PicoDetV2_infer_int8/g_picodetv2_relu6_coco_no_fuse.json < readnb/test_asset/picodet/g_picodetv2.patch'"
         exit
     fi
-
-    pushd readnb
-    python write_model.py --model_path ./test_asset/picodet/g_picodetv2_relu6_coco_no_fuse.json --out_dir ../download_nb --do_vela
+    python write_model.py --model_path ../model_zoo/PicoDetV2_infer_int8/g_picodetv2_relu6_coco_no_fuse.json --out_dir ../model_zoo/PicoDetV2_infer_int8/ --do_vela
     popd
-    # generate input_tensor.bin and copy the vela.bin from model zoo
-    # not pass
-    cp -rf model_zoo/PicoDetV2_infer_int8/vela.bin verify/vela.bin
+    cp -rf model_zoo/PicoDetV2_infer_int8/out_vela.bin verify/vela.bin
     python model_zoo/PicoDetV2_infer_int8/picodet_preprocess_load.py $PIC_PATH
 }
 
@@ -259,20 +191,16 @@ blazeface_preprocess() {
 
 ppocr_det_preprocess() {
     echo "Running preprocess steps for ppocr_det..."
-    # generate input_tensor.bin and copy the vela.bin from model zoo
-    mkdir -p model_vela
-
-    if [ ! -e "./readnb/test_asset/ppocr_det/g_ch_ppocr_mobile_v2.0_det_slim_opt.json" ]; then
-        echo "Please put generate model json file into ./readnb/test_asset/ppocr_det/g_ch_ppocr_mobile_v2.0_det_slim_opt.json"
-        echo "Then 'patch -p0 g_ch_ppocr_mobile_v2.0_det_slim_opt.json < g_ch_ppocr_det.patch'"
+    # Convert model to generate vela.bin
+    pushd readnb
+    if [ ! -e "../model_zoo/PpocrDet_infer_int8/g_ch_ppocr_mobile_v2.0_det_slim_opt.json" ]; then
+        echo "Please put generated model json file 'g_ch_ppocr_mobile_v2.0_det_slim_opt.json' into 'model_zoo/PpocrDet_infer_int8' directory"
+        echo "Then 'patch -p0 model_zoo/PpocrDet_infer_int8/g_ch_ppocr_mobile_v2.0_det_slim_opt.json < readnb/test_asset/ppocr_det/g_ch_ppocr_det.patch'"
         exit
     fi
-
-    pushd readnb
-    python write_model.py --model_path ./test_asset/ppocr_det/g_ch_ppocr_mobile_v2.0_det_slim_opt.json --out_dir ../download_nb --do_vela
+    python write_model.py --model_path ../model_zoo/PpocrDet_infer_int8/g_ch_ppocr_mobile_v2.0_det_slim_opt.json --out_dir ../model_zoo/PpocrDet_infer_int8 --do_vela
     popd
-
-    cp -rf download_nb/out_vela.bin verify/vela.bin
+    cp -rf model_zoo/PpocrDet_infer_int8/out_vela.bin verify/vela.bin
     python model_zoo/PpocrDet_infer_int8/ppocr_det_preprocess_load.py $PIC_PATH
 }
 
@@ -297,20 +225,16 @@ humanseg_preprocess() {
 
 ppocr_rec_preprocess() {
     echo "Running preprocess steps for ppocr_rec..."
-    # generate input_tensor.bin and copy the vela.bin from model zoo
-    mkdir -p model_vela
-
-    if [ ! -e "./readnb/test_asset/ppocr_rec/g_ch_ppocr_mobile_v2.0_rec_slim_opt.json" ]; then
-        echo "Please put generate model json file into ./readnb/test_asset/ppocr_rec/g_ch_ppocr_mobile_v2.0_rec_slim_opt.json"
-        echo "Then 'patch -p0 g_ch_ppocr_mobile_v2.0_rec_slim_opt.json < g_ch_ppocr_rec.patch'"
+    # Convert model to generate vela.bin
+    pushd readnb
+    if [ ! -e "../model_zoo/PpocrRec_infer_int8/g_ch_ppocr_mobile_v2.0_rec_slim_opt.json" ]; then
+        echo "Please put generated model json file 'g_ch_ppocr_mobile_v2.0_rec_slim_opt.json' into 'model_zoo/PpocrRec_infer_int8' directory"
+        echo "Then 'patch -p0 model_zoo/PpocrRec_infer_int8/g_ch_ppocr_mobile_v2.0_rec_slim_opt.json < readnb/test_asset/ppocr_rec/g_ch_ppocr_rec.patch'"
         exit
     fi
-
-    pushd readnb
-    python write_model.py --model_path ./test_asset/ppocr_rec/g_ch_ppocr_mobile_v2.0_rec_slim_opt.json --out_dir ../download_nb --do_vela
+    python write_model.py --model_path ../model_zoo/PpocrRec_infer_int8/g_ch_ppocr_mobile_v2.0_rec_slim_opt.json --out_dir ../model_zoo/PpocrRec_infer_int8 --do_vela
     popd
-
-    cp -rf download_nb/out_vela.bin verify/vela.bin
+    cp -rf model_zoo/PpocrRec_infer_int8/out_vela.bin verify/vela.bin
     python model_zoo/PpocrRec_infer_int8/ppocr_rec_preprocess_load.py $PIC_PATH
 }
 
@@ -341,7 +265,7 @@ mv1_postprocess() {
 }
 
 pplcnetv2_postprocess() {
-    echo "Running postprocess steps for PP-LCNetV2..."
+    echo "Running postprocess steps for PPLCNetV2..."
     python model_zoo/PPLCNetV2_infer_int8/pplc_postprocess_load.py verify/output_tensor.bin 1,1000
 }
 
