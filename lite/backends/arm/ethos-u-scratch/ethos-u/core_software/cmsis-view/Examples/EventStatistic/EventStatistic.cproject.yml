@@ -1,0 +1,26 @@
+project:
+
+  packs:
+    - pack: ARM::CMSIS
+    - pack: ARM::CMSIS-View
+
+  groups:
+    - group: Documentation
+      files:
+        - file: README.md
+
+    - group: Source Files
+      files:
+        - file: main.c
+
+  components:
+    - component: CMSIS:CORE
+
+    - component: CMSIS-View:Event Recorder&Semihosting
+
+    - component: Native Driver:Timeout
+    - component: Native Driver:SysCounter
+    - component: Native Driver:SysTimer
+
+    - component: Device:Definition
+    - component: Device:Startup&Baremetal

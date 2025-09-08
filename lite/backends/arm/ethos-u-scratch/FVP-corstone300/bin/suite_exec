@@ -1,0 +1,34 @@
+#! /bin/sh 
+# This script is used to execute a command under the suite environment
+if [ $# = 0 ] || [ "X$1" = "X-h" ] || [ "X$1" = "X--help" ] ;
+then
+    /bin/echo "Usage: $0 command [arg [arg [...]]] ;"
+    /bin/echo "Executes a command under the suite environment."
+    /bin/echo "Remember if starting a subshell via bash or csh that you"
+    /bin/echo "should pass --norc or -f respectively to stop your own"
+    /bin/echo "shell init files potentially overwriting the environment."
+    /bin/echo "e.g"
+    /bin/echo " $0 sh - starts an sh shell configured for the suite environment"
+    /bin/echo " $0 bash --norc - starts a bash shell without running rc files"
+    /bin/echo " $0 tcsh -f - starts a tcsh shell without running ~/*rc files"
+    /bin/echo " $0 make    - executes make under the suite environment"
+    exit 0
+fi
+# check whether we are a symlink - some old OSes do not have readlink, so do it the long way
+if [ -L "$0" ] ; then real=`/bin/ls -l "$0" | /usr/bin/cut -d ">" -f 2 | /usr/bin/cut -b2-`; else real="$0"; fi
+case "$real" in
+   /*) ;;
+    *) real=`pwd`/"$real";;
+esac
+real=`dirname "$real"`;
+PATH="$real":$PATH; export PATH
+INSTALL_DIR=`cd "${real}"/..; pwd`
+set -- "${INSTALL_DIR}" "$@"
+. "${INSTALL_DIR}/sw/ARM_Fast_Models_MPS3_Corstone_SSE-300_FVP/env.sh"
+if [ -f "$HOME/.arm/ARM_Fast_Models_MPS3_Corstone_SSE-300_FVP/env.ini" ]; then
+  set -- "$HOME/.arm/ARM_Fast_Models_MPS3_Corstone_SSE-300_FVP/env.ini" "$@"
+  . "${INSTALL_DIR}/sw/ARM_Fast_Models_MPS3_Corstone_SSE-300_FVP/userenv.sh"
+  shift
+fi
+shift
+exec "$@"

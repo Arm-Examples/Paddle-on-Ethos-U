@@ -1,0 +1,513 @@
+// Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include <memory>
+#include <string>
+#include "lite/backends/xpu/math.h"
+#include "lite/core/optimizer/mir/pass_registry.h"
+#include "lite/core/optimizer/mir/pattern_matcher_high_api.h"
+
+namespace paddle {
+namespace lite {
+namespace mir {
+namespace fusion {
+
+class XPUFcFuser : public FuseBase {
+ public:
+  explicit XPUFcFuser(bool with_bias,
+                      const std::string& act_type,
+                      const std::string& mul_type,
+                      bool with_bn) {
+    with_bias_ = with_bias;
+    act_type_ = act_type;
+    mul_type_ = mul_type;
+    with_bn_ = with_bn;
+  }
+
+  void BuildPattern() override {
+    auto* x = VarNode("x")->assert_is_op_input(mul_type_, "X")->AsInput();
+    auto* W = VarNode("W")->assert_is_op_input(mul_type_, "Y")->AsInput();
+    // check w.dims() == 2 and x.trans == false.
+    auto mul_input_check = [this](const Node* node) -> bool {
+      auto op_desc = *const_cast<Node*>(node)->stmt()->op_info();
+      auto mul_input_y_name = op_desc.Input("Y").front();
+      auto* scope = const_cast<Node*>(node)->AsStmt().op()->scope();
+      auto mul_y_shape = scope->FindMutableTensor(mul_input_y_name)->dims();
+      if (this->mul_type_ == "mul") {
+        return mul_y_shape.size() == 2;
+      }
+      if (this->mul_type_ == "matmul") {
+        return (mul_y_shape.size() == 2 &&
+                !op_desc.GetAttr<bool>("transpose_X"));
+      }
+      if (this->mul_type_ == "matmul_v2") {
+        return (mul_y_shape.size() == 2 && !op_desc.GetAttr<bool>("trans_x"));
+      }
+      return false;
+    };
+    auto* mul = OpNode("mul", mul_type_)
+                    ->AsIntermediate()
+                    ->assert_node_satisfied(mul_input_check);
+    auto* mul_out = VarNode("mul_out")->assert_is_op_output(mul_type_, "Out");
+    PMNode* bias = nullptr;
+    PMNode* add = nullptr;
+    PMNode* add_out = nullptr;
+    PMNode* act = nullptr;
+    PMNode* act_out = nullptr;
+
+    PMNode* bn_bias = nullptr;
+    PMNode* bn_mean = nullptr;
+    PMNode* bn_scale = nullptr;
+    PMNode* bn_var = nullptr;
+    PMNode* bn = nullptr;
+    PMNode* bn_out = nullptr;
+    PMNode* bn_mean_out = nullptr;
+    PMNode* bn_saved_mean = nullptr;
+    PMNode* bn_var_out = nullptr;
+    PMNode* bn_saved_var = nullptr;
+
+    if (with_bias_) {
+      mul_out->assert_is_op_input("elementwise_add", "X");
+      bias = VarNode("bias")
+                 ->assert_is_op_input("elementwise_add", "Y")
+                 ->assert_is_persistable_var()
+                 ->AsInput();
+      add = OpNode("add", "elementwise_add")->AsIntermediate();
+      add_out =
+          VarNode("add_out")->assert_is_op_output("elementwise_add", "Out");
+    }
+    if (act_type_ != "linear") {
+      act = OpNode("act", act_type_)->AsIntermediate();
+      act_out = VarNode("act_out")->assert_is_op_output(act_type_, "Out");
+    }
+    if (with_bn_) {
+      bn_bias = VarNode("bn_bias")
+                    ->assert_is_op_input("batch_norm", "Bias")
+                    ->assert_only_one_output()
+                    ->AsIntermediate();
+      bn_mean = VarNode("bn_mean")
+                    ->assert_is_op_input("batch_norm", "Mean")
+                    ->assert_only_one_output()
+                    ->AsIntermediate();
+      bn_scale = VarNode("bn_scale")
+                     ->assert_is_op_input("batch_norm", "Scale")
+                     ->assert_only_one_output()
+                     ->AsIntermediate();
+      bn_var = VarNode("bn_variance")
+                   ->assert_is_op_input("batch_norm", "Variance")
+                   ->assert_only_one_output()
+                   ->AsIntermediate();
+      bn = OpNode("bn", "batch_norm")->AsIntermediate();
+      bn_out = VarNode("bn_out")->assert_is_op_output("batch_norm", "Y");
+      bn_mean_out = VarNode("bn_mean_out")
+                        ->assert_is_op_output("batch_norm", "MeanOut")
+                        ->AsIntermediate();
+      bn_saved_mean = VarNode("bn_saved_mean")
+                          ->assert_is_op_output("batch_norm", "SavedMean")
+                          ->AsIntermediate();
+      bn_var_out = VarNode("bn_var_out")
+                       ->assert_is_op_output("batch_norm", "VarianceOut")
+                       ->AsIntermediate();
+      bn_saved_var = VarNode("bn_saved_var")
+                         ->assert_is_op_output("batch_norm", "SavedVariance")
+                         ->AsIntermediate();
+    }
+
+    *x >> *mul >> *mul_out;
+    if (with_bias_) {
+      mul_out->AsIntermediate();
+      *mul_out >> *add >> *add_out;
+      *bias >> *add;
+    } else {
+      add_out = mul_out;
+    }
+    if (with_bn_) {
+      add_out->assert_is_op_input("batch_norm", "X")->AsIntermediate();
+      *add_out >> *bn >> *bn_out;
+      *bn_bias >> *bn;
+      *bn_mean >> *bn;
+      *bn_scale >> *bn;
+      *bn_var >> *bn;
+      *bn >> *bn_mean_out;
+      *bn >> *bn_saved_mean;
+      *bn >> *bn_saved_var;
+      *bn >> *bn_var_out;
+    } else {
+      bn_out = add_out;
+    }
+
+    if (act_type_ != "linear") {
+      bn_out->assert_is_op_input(act_type_, "X")->AsIntermediate();
+      *bn_out >> *act >> *act_out;
+    } else {
+      act_out = bn_out;
+    }
+    *W >> *mul;
+    act_out->AsOutput();
+  }
+
+  void InsertNewNode(SSAGraph* graph, const key2nodes_t& matched) override {
+    cpp::OpDesc op_desc = *matched.at("mul")->stmt()->op_info();
+    auto mul = matched.at("mul")->stmt()->op();
+    auto* scope = mul->scope();
+    op_desc.mutable_inputs()->clear();
+    op_desc.mutable_outputs()->clear();
+    op_desc.SetType("__xpu__fc");
+    op_desc.SetInput("Input", {matched.at("x")->arg()->name});
+
+    auto* op_info = matched.at("mul")->stmt()->op_info();
+
+    auto filter_name = matched.at("W")->arg()->name;
+    std::string fusion_bias_name = filter_name + "_fc_fusion_bias";
+    auto* fusion_bias_node = graph->NewArgumentNode(fusion_bias_name);
+    fusion_bias_node->arg()->is_weight = true;
+    fusion_bias_node->arg()->type = LiteType::GetTensorTy(
+        TARGET(kHost), PRECISION(kFloat), DATALAYOUT(kNCHW));
+    auto* fusion_bias_t = scope->MutableParent()->NewTensor(fusion_bias_name);
+    fusion_bias_t->set_precision(paddle::lite_api::PrecisionType::kFloat);
+    if (with_bn_) {
+      auto* filter_t = scope->FindMutableTensor(filter_name);
+      auto& f_dims = filter_t->dims();
+      fusion_bias_t->Resize({f_dims[1]});
+      float* fusion_bias_ptr = fusion_bias_t->mutable_data<float>();
+
+      auto ew_dim = f_dims[1];
+
+      if (with_bias_) {
+        auto ew_bias_add_y_name = matched.at("bias")->arg()->name;
+        auto* ew_bias_add_y_t = scope->FindMutableTensor(ew_bias_add_y_name);
+        float* ew_bias_add_y_on_host = ew_bias_add_y_t->mutable_data<float>();
+        auto ew_bias_add_y_size = ew_bias_add_y_t->numel();
+
+        CHECK_EQ(ew_dim, ew_bias_add_y_size)
+            << "Elements size of `elemwise_bias` and 'mul y dim1` "
+               "should be the same, but get size of `elemwise_bias` "
+               "is: "
+            << ew_bias_add_y_size << ", size of `mul y dim1` is: " << ew_dim;
+
+        for (int i = 0; i < ew_bias_add_y_size; ++i) {
+          fusion_bias_ptr[i] = ew_bias_add_y_on_host[i];
+        }
+      } else {
+        for (int i = 0; i < ew_dim; ++i) {
+          fusion_bias_ptr[i] = 0.0f;
+        }
+      }
+
+      auto scale_name = matched.at("bn_scale")->arg()->name;
+      auto bias_name = matched.at("bn_bias")->arg()->name;
+      auto mean_name = matched.at("bn_mean")->arg()->name;
+      auto var_name = matched.at("bn_variance")->arg()->name;
+
+      auto* scale_t = scope->FindMutableTensor(scale_name);
+      auto* bias_t = scope->FindMutableTensor(bias_name);
+      auto* mean_t = scope->FindMutableTensor(mean_name);
+      auto* var_t = scope->FindMutableTensor(var_name);
+
+      int mean_len = mean_t->numel();
+      int filter_len = filter_t->numel();
+      int filter_row_num = filter_len / mean_len;
+
+      float* scale_on_host = scale_t->mutable_data<float>();
+      float* bias_on_host = bias_t->mutable_data<float>();
+      float* mean_on_host = mean_t->mutable_data<float>();
+      float* var_on_host = var_t->mutable_data<float>();
+
+      float epsilon = 0.00001f;
+      if (matched.at("bn")->stmt()->op_info()->HasAttr("epsilon")) {
+        epsilon =
+            matched.at("bn")->stmt()->op_info()->GetAttr<float>("epsilon");
+      }
+
+      for (int i = 0; i < mean_len; ++i) {
+        scale_on_host[i] = scale_on_host[i] / sqrtf(var_on_host[i] + epsilon);
+      }
+
+      for (int i = 0; i < mean_len; ++i) {
+        bias_on_host[i] +=
+            (fusion_bias_ptr[i] - mean_on_host[i]) * scale_on_host[i];
+      }
+      memcpy(fusion_bias_ptr, bias_on_host, mean_len * sizeof(float));
+      fusion_bias_t->set_persistable(true);
+      op_desc.SetInput("Bias", {fusion_bias_name});
+
+      if (!(op_info->HasAttr("enable_int8") &&
+            op_info->GetAttr<bool>("enable_int8"))) {
+        float* filter_on_host = filter_t->mutable_data<float>();
+        for (int i = 0; i < mean_len; ++i) {
+          for (int j = 0; j < filter_row_num; ++j) {
+            filter_on_host[i + mean_len * j] *= scale_on_host[i];
+          }
+        }
+      }
+
+      if ((op_info->HasAttr("enable_int8") &&
+           op_info->GetAttr<bool>("enable_int8"))) {
+        auto max_y0_vector = op_info->GetAttr<std::vector<float>>("Y0_scale");
+        CHECK_EQ(max_y0_vector.size(), mean_len)
+            << "Weight max_scale size must equal batch_norm sacle/mean "
+               "size.";
+        for (int i = 0; i < mean_len; i++) {
+          max_y0_vector[i] *= fabs(scale_on_host[i]);
+        }
+        matched.at("mul")
+            ->stmt()
+            ->mutable_op_info()
+            ->SetAttr<std::vector<float>>("Y0_scale", max_y0_vector);
+
+        int8_t* filter_on_host = filter_t->mutable_data<int8_t>();
+        for (int i = 0; i < mean_len; i++) {
+          if (scale_on_host[i] < 0) {
+            for (int j = 0; j < filter_row_num; ++j) {
+              filter_on_host[i + mean_len * j] *= -1;
+            }
+          }
+        }
+      }
+
+      op_desc.SetInput("Filter", {filter_name});
+
+    } else {
+      if (with_bias_) {
+        op_desc.SetInput("Bias", {matched.at("bias")->arg()->name});
+      }
+      op_desc.SetInput("Filter", {matched.at("W")->arg()->name});
+    }
+
+    op_desc.SetAttr<bool>("has_bias", (with_bias_ || with_bn_));
+    std::string output_name, output_node_name;
+    if (act_type_ != "linear") {
+      output_name = matched.at("act_out")->arg()->name;
+      output_node_name = "act_out";
+    } else if (with_bn_) {
+      output_name = matched.at("bn_out")->arg()->name;
+      output_node_name = "bn_out";
+    } else if (with_bias_) {
+      output_name = matched.at("add_out")->arg()->name;
+      output_node_name = "add_out";
+    } else {
+      output_name = matched.at("mul_out")->arg()->name;
+      output_node_name = "mul_out";
+    }
+    bool per_channel = false;
+    int weight_scale_size = 1;
+
+    auto mul_input_y_name = op_info->Input("Y").front();
+    auto mul_y_shape = scope->FindMutableTensor(mul_input_y_name)->dims();
+    CHECK_EQ(mul_y_shape.size(), 2) << "mul_y_shape.size: "
+                                    << mul_y_shape.size();
+    const bool quant = op_info->HasAttr("enable_int8") &&
+                       op_info->GetAttr<bool>("enable_int8");
+    op_desc.SetAttr<bool>("enable_int8", quant);
+    // int 8
+    // X0_scale is already in op_desc when copy from mul
+    if (quant) {
+      CHECK(op_info->HasAttr("Y0_scale")) << "quant model no Y0_scale";
+      weight_scale_size =
+          op_info->GetAttr<std::vector<float>>("Y0_scale").size();
+      CHECK_EQ(weight_scale_size, mul_y_shape[1])
+          << "weight_scale_size: " << weight_scale_size
+          << ", mul_y_shape:" << mul_y_shape;
+      CHECK_GE(weight_scale_size, 1) << weight_scale_size;
+      std::vector<float> weight_max;
+      if (IsPerTensorQuant(op_info->GetAttr<std::vector<float>>("Y0_scale"))) {
+        per_channel = false;
+        VLOG(3) << "xpu fc per tensor";
+        weight_max.push_back(
+            op_info->GetAttr<std::vector<float>>("Y0_scale")[0]);
+      } else {
+        per_channel = true;
+        VLOG(3) << "xpu fc per channel, first channel max:"
+                << op_info->GetAttr<std::vector<float>>("Y0_scale")[0]
+                << ", last channel max: "
+                << op_info->GetAttr<std::vector<float>>(
+                       "Y0_scale")[weight_scale_size - 1];
+        for (auto wm : op_info->GetAttr<std::vector<float>>("Y0_scale")) {
+          weight_max.push_back(wm);
+        }
+      }
+      VLOG(3) << "weight_max size:" << weight_max.size();
+      op_desc.SetAttr<std::vector<float>>("Filter0_scale", weight_max);
+      op_desc.SetAttr<bool>("per_channel", per_channel);
+
+      op_desc.SetAttr<std::vector<float>>(
+          "Input0_scale",
+          {matched.at("mul")->stmt()->op_info()->GetInputScale(
+              matched.at("x")->arg()->name)[0]});
+
+      std::string out_op_name{};
+      if (act_type_ != "linear") {
+        out_op_name = "act";
+      } else if (with_bias_) {
+        out_op_name = "add";
+      } else {
+        out_op_name = "mul";
+      }
+
+      float out_scale = 0;
+      if (matched.at(out_op_name)
+              ->stmt()
+              ->op_info()
+              ->HasOutputScale(output_name)) {
+        out_scale = matched.at(out_op_name)
+                        ->stmt()
+                        ->op_info()
+                        ->GetOutputScale(output_name)[0];
+      } else {
+        VLOG(1) << "We default set out_scale=0,thanks to there is not out "
+                   "scale value in this op.";
+      }
+
+      op_desc.SetAttr<std::vector<float>>("Output0_scale", {out_scale});
+    }
+
+    // TODO(quwei): refactor in order to Conform to the new format.
+    // conv2d int16
+    if (matched.at("mul")->stmt()->op_info()->HasAttr("enable_int16") &&
+        matched.at("mul")->stmt()->op_info()->GetAttr<bool>("enable_int16")) {
+      op_desc.SetAttr<bool>("enable_int16", true);
+      op_desc.SetAttr<std::vector<float>>(
+          "Input0_scale",
+          {((2 << 15) - 1) *
+           matched.at("mul")->stmt()->op_info()->GetInputScale(
+               matched.at("x")->arg()->name)[0]});
+
+      op_desc.SetAttr<std::vector<float>>(
+          "Filter0_scale",
+          {((2 << 15) - 1) *
+           matched.at("mul")->stmt()->op_info()->GetInputScale(
+               matched.at("W")->arg()->name)[0]});
+    }
+
+    op_desc.SetOutput("Output", {output_name});
+    std::map<std::string, int> act_map{{"linear", 0},
+                                       {"relu", 1},
+                                       {"sigmoid", 2},
+                                       {"tanh", 3},
+                                       {"gelu", 4},
+                                       {"leaky_relu", 5},
+                                       {"hard_swish", 14},
+                                       {"hard_sigmoid", 15},
+                                       {"relu6", 17},
+                                       {"__xpu__quick_gelu", 19}};
+
+    float act_param_ = 0.0f;
+    if (act_type_ == "leaky_relu") {
+      auto act_op_desc = *matched.at("act")->stmt()->op_info();
+      act_param_ = act_op_desc.GetAttr<float>("alpha");
+    } else if (act_type_ == "hard_sigmoid") {
+      auto act_op_desc = *matched.at("act")->stmt()->op_info();
+      act_param_ = act_op_desc.GetAttr<float>("slope");
+    }
+    op_desc.SetAttr<int>("act_type", act_map[act_type_]);
+    op_desc.SetAttr<float>("act_param", act_param_);
+
+    op_desc.SetAttr<int>("in_num_col_dims", -1);
+    if (mul_type_ == "mul") {
+      op_desc.SetAttr("in_num_col_dims",
+                      op_info->GetAttr<int>("x_num_col_dims"));
+      // trans_x and trans_y is not existed in mul op. set false
+      op_desc.SetAttr("transpose_x", false);
+      op_desc.SetAttr("transpose_w", false);
+    } else if (mul_type_ == "matmul") {
+      op_desc.SetAttr("transpose_x", op_info->GetAttr<bool>("transpose_X"));
+      op_desc.SetAttr("transpose_w", op_info->GetAttr<bool>("transpose_Y"));
+    } else {
+      op_desc.SetAttr("transpose_x", op_info->GetAttr<bool>("trans_x"));
+      op_desc.SetAttr("transpose_w", op_info->GetAttr<bool>("trans_y"));
+    }
+    if (op_info->HasAttr("alpha")) {
+      op_desc.SetAttr("alpha", op_info->GetAttr<float>("alpha"));
+    }
+
+    std::string max_output_name = output_name + "_xpu_max";
+    auto* max_output_node = graph->NewArgumentNode(max_output_name);
+    max_output_node->arg()->type = LiteType::GetTensorTy(
+        TARGET(kXPU), PRECISION(kFloat), DATALAYOUT(kNCHW));
+    auto* max_output_tensor = scope->NewTensor(max_output_name);
+    max_output_tensor->set_precision(paddle::lite_api::PrecisionType::kFloat);
+    op_desc.SetOutput("OutputMax", {max_output_name});
+
+    auto fc_op = LiteOpRegistry::Global().Create("__xpu__fc");
+    auto& valid_places = mul->valid_places();
+    fc_op->Attach(op_desc, scope);
+    auto* new_op_node = graph->GraphCreateInstructNode(fc_op, valid_places);
+
+    IR_NODE_LINK_TO(matched.at("W"), new_op_node);
+    IR_NODE_LINK_TO(matched.at("x"), new_op_node);
+    if (with_bn_) {
+      IR_NODE_LINK_TO(fusion_bias_node, new_op_node);
+    }
+    if (with_bias_ && !with_bn_) {
+      IR_NODE_LINK_TO(matched.at("bias"), new_op_node);
+    }
+    IR_NODE_LINK_TO(new_op_node, matched.at(output_node_name));
+    DirectedLink(new_op_node, max_output_node);
+  }
+
+ private:
+  bool with_bias_;
+  std::string act_type_;
+  std::string mul_type_;
+  bool with_bn_;
+  bool IsPerTensorQuant(const std::vector<float>& weight_max) {
+    bool per_tensor = true;
+    CHECK_GT(weight_max.size(), 0) << "fc channel size: " << weight_max.size();
+    auto first = weight_max[0];
+    for (size_t i = 1; i < weight_max.size(); ++i) {
+      if (std::abs(first - weight_max[i]) > 1e-6) {
+        per_tensor = false;
+        break;
+      }
+    }
+    return per_tensor;
+  }
+};
+
+}  // namespace fusion
+
+class XPUFcFusePass : public ProgramPass {
+ public:
+  void Apply(const std::unique_ptr<SSAGraph>& graph) override {
+    if (GetBoolFromEnv("XPU_ENABLE_XTCL")) return;
+    // TODO(weihaoji) support with_no_bias and more activation types
+    for (auto with_bias : {true, false}) {
+      for (auto act_type : {"relu",
+                            "gelu",
+                            "__xpu__quick_gelu",
+                            /*"sigmoid",
+                            "tanh",
+                            "leaky_relu",
+                            "hard_swish",
+                            "hard_sigmoid",
+                            "relu6",*/
+                            "linear"}) {
+        for (auto mul_type : {"mul", "matmul", "matmul_v2"}) {
+          for (auto with_bn : {true, false}) {
+            fusion::XPUFcFuser fuser(with_bias, act_type, mul_type, with_bn);
+            fuser(graph.get());
+          }
+        }
+      }
+    }
+  }
+};
+
+}  // namespace mir
+}  // namespace lite
+}  // namespace paddle
+
+REGISTER_MIR_PASS(__xpu__fc_fuse_pass, paddle::lite::mir::XPUFcFusePass)
+    .BindTargets({TARGET(kXPU)})
+    .BindKernel("__xpu__fc");

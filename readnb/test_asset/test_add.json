@@ -1,0 +1,290 @@
+{
+    "block_nums": 1,
+    "blocks": [
+        {
+            "id": 0,
+            "parent": -1,
+            "forward_block_idx": -1,
+            "vars": [
+                {
+                    "name": "feed",
+                    "type": {
+                        "type": 9,
+                        "dense_tensor": {
+                            "lod_lv": 0,
+                            "dt_type": 0,
+                            "dt_dims": []
+                        }
+                    },
+                    "persistable": true,
+                    "need_check_feed": false
+                },
+                {
+                    "name": "image",
+                    "type": {
+                        "type": 7,
+                        "dense_tensor": {
+                            "lod_lv": 0,
+                            "dt_type": 3,
+                            "dt_dims": [
+                                5
+                            ]
+                        }
+                    },
+                    "persistable": false,
+                    "need_check_feed": false
+                },
+                {
+                    "name": "save_infer_model/scale_0",
+                    "type": {
+                        "type": 7,
+                        "dense_tensor": {
+                            "lod_lv": 0,
+                            "dt_type": 3,
+                            "dt_dims": [
+                                5
+                            ]
+                        }
+                    },
+                    "persistable": false,
+                    "need_check_feed": false
+                },
+                {
+                    "name": "fetch",
+                    "type": {
+                        "type": 10,
+                        "dense_tensor": {
+                            "lod_lv": 0,
+                            "dt_type": 0,
+                            "dt_dims": []
+                        }
+                    },
+                    "persistable": true,
+                    "need_check_feed": false
+                }
+            ],
+            "ops": [
+                {
+                    "type": "feed",
+                    "inputs": [
+                        {
+                            "parameter": "X",
+                            "arguments": [
+                                {
+                                        "name": "feed",
+                                        "type": {
+                                            "type": 9,
+                                            "dense_tensor": {
+                                                "lod_lv": 0,
+                                                "dt_type": 0,
+                                                "dt_dims": []
+                                            }
+                                        },
+                                        "persistable": true,
+                                        "need_check_feed": false
+                                }
+                            ]
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "parameter": "Out",
+                            "arguments": [
+                                {
+                                    "name": "image",
+                                    "type": {
+                                        "type": 7,
+                                        "dense_tensor": {
+                                            "lod_lv": 0,
+                                            "dt_type": 3,
+                                            "dt_dims": [
+                                                5
+                                            ]
+                                        }
+                                    },
+                                    "persistable": false,
+                                    "need_check_feed": false
+                                }
+                            ]
+                        }
+                    ],
+                    "attrs": [
+                        {
+                            "name": "__@kernel_type_attr@__",
+                            "val": "feed/def/kHost/kAny/kAny",
+                            "op_type": "feed",
+                            "alias": "def",
+                            "target": "1",
+                            "precesion": "4",
+                            "layout": "2"
+                        },
+                        {
+                            "name": "col",
+                            "val": 0
+                        }
+                    ]
+                },
+                {
+                    "type": "add",
+                    "inputs": [
+                        {
+                            "parameter": "Input",
+                            "arguments": [
+                                {
+                                    "name": "image",
+                                    "type": {
+                                        "type": 7,
+                                        "dense_tensor": {
+                                            "lod_lv": 0,
+                                            "dt_type": 3,
+                                            "dt_dims": [
+                                                5
+                                            ]
+                                        }
+                                    },
+                                    "persistable": false,
+                                    "need_check_feed": false
+                                }
+                            ]
+                        },
+                        {
+                            "parameter": "Input",
+                            "arguments": [
+                                {
+                                    "name": "image",
+                                    "type": {
+                                        "type": 7,
+                                        "dense_tensor": {
+                                            "lod_lv": 0,
+                                            "dt_type": 3,
+                                            "dt_dims": [
+                                                5
+                                            ]
+                                        }
+                                    },
+                                    "persistable": false,
+                                    "need_check_feed": false
+                                }
+                            ]
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "parameter": "Output",
+                            "arguments": [
+                                {
+                                        "name": "save_infer_model/scale_0",
+                                        "type": {
+                                            "type": 7,
+                                            "dense_tensor": {
+                                                "lod_lv": 0,
+                                                "dt_type": 3,
+                                                "dt_dims": [
+                                                    5
+                                                ]
+                                            }
+                                        },
+                                        "persistable": false,
+                                        "need_check_feed": false
+                                }
+                            ]
+                        }
+                    ],
+                    "attrs": [
+                        {
+                            "name": "__@kernel_type_attr@__",
+                            "val": "add/def/kARM/kInt32/kNCHW",
+                            "op_type": "add",
+                            "alias": "def",
+                            "target": "4",
+                            "precesion": "3",
+                            "layout": "1"
+                        },
+                        {
+                            "name": "data_format",
+                            "val": "AnyLayout"
+                        },
+                        {
+                            "name": "is_test",
+                            "val": 0
+                        },
+                        {
+                            "name": "use_cudnn",
+                            "val": false
+                        },
+                        {
+                            "name": "use_mkldnn",
+                            "val": false
+                        }
+                    ]
+                },
+
+                {
+                    "type": "fetch",
+                    "inputs": [
+                        {
+                            "parameter": "X",
+                            "arguments": [
+                                {
+                                        "name": "save_infer_model/scale_0",
+                                        "type": {
+                                            "type": 7,
+                                            "dense_tensor": {
+                                                "lod_lv": 0,
+                                                "dt_type": 3,
+                                                "dt_dims": [
+                                                    5
+                                                ]
+                                            }
+                                        },
+                                        "persistable": false,
+                                        "need_check_feed": false
+                                }
+                            ]
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "parameter": "Out",
+                            "arguments": [
+                                {
+                                        "name": "fetch",
+                                        "type": {
+                                            "type": 10,
+                                            "dense_tensor": {
+                                                "lod_lv": 0,
+                                                "dt_type": 0,
+                                                "dt_dims": []
+                                            }
+                                        },
+                                        "persistable": true,
+                                        "need_check_feed": false
+                                }
+                            ]
+                        }
+                    ],
+                    "attrs": [
+                        {
+                            "name": "__@kernel_type_attr@__",
+                            "val": "fetch/def/kHost/kAny/kAny",
+                            "op_type": "fetch",
+                            "alias": "def",
+                            "target": "1",
+                            "precesion": "4",
+                            "layout": "2"
+                        },
+                        {
+                            "name": "col",
+                            "val": 0
+                        },
+                        {
+                            "name": "data_type",
+                            "val": 1
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "params": []
+}

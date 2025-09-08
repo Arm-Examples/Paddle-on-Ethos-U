@@ -1,0 +1,17 @@
+@startuml
+
+skinparam backgroundColor #FEFEFE
+
+[Inference] as inf
+[Network] as net
+[Buffer] as buf
+[Device] as dev
+
+inf -> net
+inf -> buf: IFM and OFM
+
+net --> dev
+
+buf -> dev
+
+@enduml

@@ -1,0 +1,12 @@
+ethos-u-vela==4.2.0
+flatbuffers==24.3.25
+lxml==5.3.1
+numpy==1.23.5
+packaging==24.2
+torch>=2.5.1
+torchvision
+opencv-python
+shapely
+matplotlib
+scipy
+tosa_serialization_lib
