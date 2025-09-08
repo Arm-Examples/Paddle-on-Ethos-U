@@ -1,0 +1,39 @@
+#
+# SPDX-FileCopyrightText: Copyright 2020-2022, 2024 Arm Limited and/or its affiliates <open-source-office@arm.com>
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the License); you may
+# not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an AS IS BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Cross compilation example when using a custom compiler and toolchain files
+
+set(CMAKE_SYSTEM_NAME Generic)
+
+set(CMAKE_C_COMPILER /opt/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc)
+set(CMAKE_CXX_COMPILER /opt/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/bin/aarch64-linux-gnu-g++)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_SYSTEM_PROCESSOR "aarch64")
+
+add_compile_options(-Wall -Wextra -Werror)
+
+set(CMAKE_FIND_ROOT_PATH /opt/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/aarch64-linux-gnu/)
+
+set(FIND_LIBRARY_USE_LIB64_PATHS TRUE)
+
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+

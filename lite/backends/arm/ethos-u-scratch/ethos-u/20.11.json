@@ -1,0 +1,60 @@
+{
+    "externals":
+    [
+        {
+            "path": "core_platform",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-platform",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-platform",
+            "revision": "20.11"
+        },
+        {
+            "path": "core_software",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-software",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-software",
+            "revision": "20.11"
+        },
+        {
+            "path": "core_software/core_driver",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-driver",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-driver",
+            "revision": "20.11"
+        },
+        {
+            "path": "core_software/cmsis",
+            "fetchurl": "https://github.com/ARM-software/CMSIS_5.git",
+            "revision": "9d02698d99fdb2b40dbbbf04f9c545525a12f09a"
+        },
+        {
+            "path": "core_software/rtos/freertos",
+            "fetchurl": "https://github.com/aws/amazon-freertos.git",
+            "revision": "202011.00"
+        },
+        {
+            "path": "core_software/rtos/freertos/freertos_kernel",
+            "fetchurl": "https://github.com/FreeRTOS/FreeRTOS-Kernel.git",
+            "revision": "V10.4.2"
+        },
+        {
+            "path": "core_software/tensorflow",
+            "fetchurl": "https://github.com/tensorflow/tensorflow",
+            "revision": "54b62eed204fbc4e155fbf934bee9b438bb391ef"
+        },
+        {
+            "path": "linux_driver_stack",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-linux-driver-stack",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-linux-driver-stack",
+            "revision": "20.11"
+        },
+        {
+            "path": "linux_driver_stack/flatbuffers",
+            "fetchurl": "https://github.com/google/flatbuffers",
+            "revision": "338393f854eb5ba24761a22cd9316ff5cee4eab0"
+        },
+        {
+            "path": "vela",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-vela",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-vela",
+            "revision": "2.0.0"
+        }
+    ]
+}

@@ -1,0 +1,76 @@
+{
+    "externals":
+    [
+        {
+            "path": "core_platform",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-platform",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-platform",
+            "revision": "23.11"
+        },
+        {
+            "path": "core_software",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-software",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-software",
+            "revision": "23.11"
+        },
+        {
+            "path": "core_software/core_driver",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-driver",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-driver",
+            "revision": "23.11"
+        },
+        {
+            "path": "core_software/cmsis",
+            "fetchurl": "https://github.com/ARM-software/CMSIS_5.git",
+            "revision": "a75f01746df18bb5b929dfb8dc6c9407fac3a0f3"
+        },
+        {
+            "path": "core_software/cmsis-nn",
+            "fetchurl": "https://github.com/ARM-software/CMSIS-NN.git",
+            "revision": "bfc54edb61e873039ec0857cacc40df36b1d644e"
+        },
+        {
+            "path": "core_software/cmsis-view",
+            "fetchurl": "https://github.com/ARM-software/CMSIS-View.git",
+            "revision": "28b5f70791d7b0ca881b1d5fa176a520f4daa49c"
+        },
+        {
+            "path": "core_software/openamp/libmetal",
+            "fetchurl": "https://github.com/OpenAMP/libmetal",
+            "revision": "8041e1c2764812a8d6feded09e68d87bc7812b3e"
+        },
+        {
+            "path": "core_software/openamp/openamp",
+            "fetchurl": "https://github.com/OpenAMP/open-amp",
+            "revision": "v2023.04.0"
+        },
+        {
+            "path": "core_software/rtos/freertos/freertos_kernel",
+            "fetchurl": "https://github.com/FreeRTOS/FreeRTOS-Kernel.git",
+            "revision": "V10.6.1"
+        },
+        {
+            "path": "core_software/rtos/threadx",
+            "name": "linaro",
+            "fetchurl": "https://github.com/Linaro/threadx",
+            "revision": "20ae996c12b6e693db51d5b523d22cd248513702"
+        },
+        {
+            "path": "core_software/tflite_micro",
+            "fetchurl": "https://github.com/tensorflow/tflite-micro",
+            "revision": "0996efe9b60fde8efcde5242df1afc6ee24d9ee2"
+        },
+        {
+            "path": "linux_driver_stack",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-linux-driver-stack",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-linux-driver-stack",
+            "revision": "23.11"
+        },
+        {
+            "path": "vela",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-vela",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-vela",
+            "revision": "3.10.0"
+        }
+    ]
+}

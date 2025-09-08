@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="187px" preserveAspectRatio="none" style="width:214px;height:187px;background:#FEFEFE;" version="1.1" viewBox="0 0 214 187" width="214px" zoomAndPan="magnify"><defs><filter height="300%" id="fpjgrf9isy925" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><!--MD5=[e700746e0efa2c4773b8fec71443b5b6]
+entity inf--><rect fill="#FEFECE" filter="url(#fpjgrf9isy925)" height="36.2969" style="stroke: #A80036; stroke-width: 1.5;" width="85" x="6" y="8"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="1" y="13"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="1" y="34.2969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="65" x="16" y="30.9951">Inference</text><!--MD5=[27d8026e1e607fa992f9f5b0cd222a86]
+entity net--><rect fill="#FEFECE" filter="url(#fpjgrf9isy925)" height="36.2969" style="stroke: #A80036; stroke-width: 1.5;" width="77" x="126" y="8"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="121" y="13"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="121" y="34.2969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="57" x="136" y="30.9951">Network</text><!--MD5=[0026c2bef77b3322991a49ea733d1063]
+entity buf--><rect fill="#FEFECE" filter="url(#fpjgrf9isy925)" height="36.2969" style="stroke: #A80036; stroke-width: 1.5;" width="61" x="49" y="74"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="44" y="79"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="44" y="100.2969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="41" x="59" y="96.9951">Buffer</text><!--MD5=[3d99d59a27ec55cd9b0b1490801f78bc]
+entity dev--><rect fill="#FEFECE" filter="url(#fpjgrf9isy925)" height="36.2969" style="stroke: #A80036; stroke-width: 1.5;" width="67" x="73" y="140"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="68" y="145"/><rect fill="#FEFECE" height="5" style="stroke: #A80036; stroke-width: 1.5;" width="10" x="68" y="166.2969"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="47" x="83" y="162.9951">Device</text><!--MD5=[2ff72c400cccaeb19456038b10d7a192]
+link inf to net--><path d="M91.09,26 C100.94,26 110.79,26 120.64,26 " fill="none" id="inf-&gt;net" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="125.79,26,116.79,22,120.79,26,116.79,30,125.79,26" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[683c956fb43f11bd9ac76d5bc8360245]
+link inf to buf--><path d="M56.81,44.15 C60.49,51.76 64.87,60.8 68.8,68.9 " fill="none" id="inf-&gt;buf" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="71.17,73.8,70.8612,63.956,68.9971,69.2969,63.6562,67.4327,71.17,73.8" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[c137ea9796ba7150be1b84493d485127]
+link net to dev--><path d="M156.8,44.26 C146.35,67.67 127.7,109.49 116.28,135.08 " fill="none" id="net-&gt;dev" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="114.23,139.67,121.5367,133.066,116.258,135.0998,114.2243,129.8211,114.23,139.67" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[f081c634ca37a6c48a522a149df97049]
+link buf to dev--><path d="M86.74,110.15 C89.94,117.76 93.76,126.8 97.18,134.9 " fill="none" id="buf-&gt;dev" style="stroke: #A80036; stroke-width: 1.0;"/><polygon fill="#A80036" points="99.24,139.8,99.3972,129.9524,97.2825,135.1991,92.0358,133.0844,99.24,139.8" style="stroke: #A80036; stroke-width: 1.0;"/><!--MD5=[8c816b15a51d6b9c34284e9b0bbcc4d9]
+@startuml
+
+skinparam backgroundColor #FEFEFE
+
+[Inference] as inf
+[Network] as net
+[Buffer] as buf
+[Device] as dev
+
+inf -> net
+inf -> buf: IFM and OFM
+
+net - -> dev
+
+buf -> dev
+
+@enduml
+
+PlantUML version 1.2020.02(Sun Mar 01 11:22:07 CET 2020)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 11.0.20.1+1-post-Ubuntu-0ubuntu122.04
+Operating System: Linux
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>

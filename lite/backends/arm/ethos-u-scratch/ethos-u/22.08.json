@@ -1,0 +1,66 @@
+{
+    "externals":
+    [
+        {
+            "path": "core_platform",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-platform",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-platform",
+            "revision": "22.08"
+        },
+        {
+            "path": "core_software",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-software",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-software",
+            "revision": "22.08"
+        },
+        {
+            "path": "core_software/core_driver",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-driver",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-driver",
+            "revision": "22.08"
+        },
+        {
+            "path": "core_software/cmsis",
+            "fetchurl": "https://github.com/ARM-software/CMSIS_5.git",
+            "revision": "ed78d6b78766d71cfe0431149f2f261d1c7277a1"
+        },
+        {
+            "path": "core_software/cmsis-view",
+            "fetchurl": "https://github.com/ARM-software/CMSIS-View.git",
+            "revision": "5d9df63ae1e389cfb64e1d7977bfa7f7b81a312a"
+        },
+        {
+            "path": "core_software/rtos/freertos",
+            "fetchurl": "https://github.com/aws/amazon-freertos.git",
+            "revision": "202203.00"
+        },
+        {
+            "path": "core_software/rtos/freertos/freertos_kernel",
+            "fetchurl": "https://github.com/FreeRTOS/FreeRTOS-Kernel.git",
+            "revision": "ac69aa858ae25027ba7decf5512deac7843ce368" 
+        },
+        {
+            "path": "core_software/rtos/threadx",
+            "name": "linaro",
+            "fetchurl": "https://github.com/Linaro/threadx",
+            "revision": "mps3_an547"
+        },
+        {
+            "path": "core_software/tflite_micro",
+            "fetchurl": "https://github.com/tensorflow/tflite-micro",
+            "revision": "67e9d8f60d3e37ab02f94a93f016179ef5e96cb6"
+        },
+        {
+            "path": "linux_driver_stack",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-linux-driver-stack",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-linux-driver-stack",
+            "revision": "22.08"
+        },
+        {
+            "path": "vela",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-vela",
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-vela",
+            "revision": "3.5.0"
+        }
+    ]
+}

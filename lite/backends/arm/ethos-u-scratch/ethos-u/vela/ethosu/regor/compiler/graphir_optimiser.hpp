@@ -1,0 +1,136 @@
+//
+// SPDX-FileCopyrightText: Copyright 2024 Arm Limited and/or its affiliates <open-source-office@arm.com>
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the License); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an AS IS BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#pragma once
+
+#include "common/logging.hpp"
+
+#include "graph.hpp"
+#include "graph_optimiser.hpp"
+#include "operation.hpp"
+#include "tensor.hpp"
+
+#include <vector>
+
+namespace regor
+{
+
+/// <summary>
+/// GraphIR Graph optimiser
+/// </summary>
+class GraphIrOptimiser : public GraphOptimiser
+{
+    using OpRewriteFunction = Operation *(GraphIrOptimiser::*)(Graph *, Operation *);
+    using TensorRewriteFunction = Tensor *(GraphIrOptimiser::*)(Graph *, Tensor *);
+    using GraphOptStepArray = std::vector<RewriteFunctions<GraphIrOptimiser>>;
+
+private:
+    Operation *RemoveReshape(Graph *const graph, Operation *const operation);
+    Operation *ConvertAttributes(Graph *const graph, Operation *const operation);
+    Operation *ConvertResizeOffsets(Graph *const graph, Operation *const operation);
+    Tensor *ConvertInt48Tensors(Graph *graph, Tensor *tensor);
+    Tensor *ConvertBool8Tensors(Graph *graph, Tensor *tensor);
+    Operation *RewriteFullyConnected(Graph *const graph, Operation *const operation);
+    Operation *FixupPoolStrides(Graph *const, Operation *const operation);
+    Operation *RewriteRescale(Graph *const graph, Operation *const operation);
+    Operation *FuseRescale(Graph *const graph, Operation *const operation);
+    Operation *RewriteTable(Graph *const graph, Operation *const operation);
+    Operation *RewriteCast(Graph *const graph, Operation *const operation);
+    Operation *RewriteConcat(Graph *const graph, Operation *const operation);
+    Operation *RewriteSlice(Graph *const graph, Operation *const operation);
+    Operation *RewriteNegate(Graph *const graph, Operation *const operation);
+    void MoveToConsumer(const Operation *const operation, Operation *const cons);
+    Operation *MoveSplitSliceToConsumer(Graph *const, Operation *const operation);
+
+    // The graph optimisation steps.
+    // Order matters, array of rewrites processed in order.
+    // clang-format off
+    const GraphOptStepArray _graphOptimisationSteps =
+    {{
+        {
+            {
+#if LOG_TRACE1_ON
+               &GraphOptimiser::VisitTensorLog
+#endif
+            },
+            {
+#if LOG_TRACE1_ON
+                &GraphOptimiser::VisitOperatorLog,
+#endif
+                &GraphOptimiser::RecordOperation
+            }
+        },
+        {
+            {
+                &GraphIrOptimiser::ConvertInt48Tensors,
+                &GraphIrOptimiser::ConvertBool8Tensors,
+            },
+            {
+                &GraphIrOptimiser::RemoveReshape,
+            }
+        },
+        {
+            {},
+            {
+                &GraphIrOptimiser::ConvertAttributes,
+                &GraphIrOptimiser::ConvertResizeOffsets,
+                &GraphIrOptimiser::RewriteFullyConnected,
+                &GraphIrOptimiser::FixupPoolStrides,
+                &GraphIrOptimiser::RewriteRescale,
+                &GraphIrOptimiser::RewriteTable,
+                &GraphIrOptimiser::RewriteCast,
+                &GraphIrOptimiser::RewriteConcat,
+                &GraphIrOptimiser::RewriteSlice,
+                &GraphIrOptimiser::RewriteNegate,
+                &GraphIrOptimiser::FuseRescale,  // First pass fuse all possible ifm and ofm rescales
+            }
+        },
+        // MoveSplitSliceToConsumer need to be done after any other optimisation that can affect the ifm/ofm shapes
+        // has been performed, since the ifm/ofm shapes are of importance to this function.
+        {
+            {},
+            {
+                &GraphIrOptimiser::FuseRescale,  // Second pass, fuse any remaining ofm rescales after ifm fusing in first pass
+                &GraphIrOptimiser::MoveSplitSliceToConsumer
+            }
+        },
+        {
+            {
+#if LOG_TRACE1_ON
+                &GraphOptimiser::VisitTensorLog
+#endif
+            },
+            {
+#if LOG_TRACE1_ON
+                &GraphOptimiser::VisitOperatorLog,
+#endif
+                &GraphOptimiser::RecordOptimisation
+            }
+        }
+    }};
+    // clang-format on
+
+public:
+    explicit GraphIrOptimiser(IArchitectureConstraints *constraints, const GraphOptimiserOptions &options, OptimiserDatabase *db);
+
+    const GraphOptStepArray &GraphOptimisationSteps() const { return _graphOptimisationSteps; }
+
+    void OptimiseGraph(Graph *graph);
+};
+
+}  // namespace regor

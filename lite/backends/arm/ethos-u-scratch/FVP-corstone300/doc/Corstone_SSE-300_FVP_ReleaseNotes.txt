@@ -1,0 +1,102 @@
+=====================================================================================
+Fast Models 11.22 Release Notes for Corstone SSE-300 reference design FVPs
+=====================================================================================
+
+These release notes relate to Corstone SSE-300 Ethos-U55 and Corstone SSE-300
+Ethos-U65 FVPs. This model implements the Corstone SSE-300 system as specified
+by the Corstone SSE-300 architecture and system specifications.
+
+--------------------------------------------------------------------------------
+New features in this release
+--------------------------------------------------------------------------------
+
+* Aligned with AN552 Issue C.
+* Parameterized FPGA SRAM size.
+* Added FMC CMSDK GPIOs.
+* Aligned PPC expansion regions.
+* Supports NPU0 PPC.
+* Includes run-time optimization for NPU.
+
+----------------------------------------------------------------------------------------
+Quality level
+----------------------------------------------------------------------------------------
+
+This is public release of Corstone SSE-300 Ethos-U55 and Corstone SSE-300 Ethos-U65 FVPs
+
+--------------------------------------------------------------------------------
+Known issues
+--------------------------------------------------------------------------------
+
+None
+
+--------------------------------------------------------------------------------
+Differences between the model and the MPS3 specification
+--------------------------------------------------------------------------------
+
+The Ethernet controller in the model is a LAN91C111. The MPS3 documents
+(including those for pre-v8-M cores) specify a LAN9220.
+
+In the Memory Gating Unit, the model provides a configurable block size. For
+performance reasons, the minimum block size in the model is currently 4096 bytes.
+Hardware and later models may allow smaller block sizes. Software should always
+use the BLK_CFG register to determine block size.
+
+Some of the peripherals have minimal implementations:
+ - The Audio and USB controllers are RAZ/WI.
+ - Only the touchscreen functionality of the STMPE811 touchscreen controller is
+   implemented.
+ - A subset of the MPS3 LCD module's graphics modes and commands are supported.
+
+The usual general Fast Model restrictions apply.
+
+--------------------------------------------------------------------------------
+Running the model
+--------------------------------------------------------------------------------
+
+Refer to the Fast Models User Guide for general instructions on running FVPs.
+Refer to the Arm Corstone SSE-300 reference design Technical Overview for
+information on the compute subsystem and how to work with it.
+
+This model is intended to be used with the Arm reference design software package.
+
+--------------------------------------------------------------------------------
+Parameters
+--------------------------------------------------------------------------------
+
+The full set of parameters and their descriptions can be seen by running the
+model with the --list-params argument. Most Cortex-M55 core parameters share
+their names with a corresponding RTL configuration parameter.
+
+For those new to TrustZone for Cortex-M, however, it may be useful to run the
+model with some of these features disabled. Running the model with the following
+parameters disables the IDAU and the Security Gates:
+
+FVP_MPS3_Corstone_SSE-300_Ethos-U55 --parameter idau.NUM_IDAU_REGION=0 \
+                     --parameter mps3_board.DISABLE_GATING=1
+
+FVP_MPS3_Corstone_SSE-300_Ethos-U65 --parameter idau.NUM_IDAU_REGION=0 \
+                     --parameter mps3_board.DISABLE_GATING=1
+
+--------------------------------------------------------------------------------
+FPGA SRAM sizes
+--------------------------------------------------------------------------------
+
+As part of aligning with AN552 Issue B, the default sizes of FPGA SRAM and
+Corstone-300 Internal SRAM have been reduced to 1MB and 2x1MB respectively,
+however both can be adjusted using parameters.
+
+Running the model with the following parameters configures the SRAM size to 2MB
+for FPGA SRAM and 2x2MB for Internal SRAM:
+
+FVP_MPS3_Corstone_SSE-300_Ethos-U55 --parameter mps3_board.FPGA_SRAM_SIZE=2 \
+                     --parameter mps3_board.sse300.VM_BANK_SIZE=2048
+
+FVP_MPS3_Corstone_SSE-300_Ethos-U65 --parameter mps3_board.FPGA_SRAM_SIZE=2 \
+                     --parameter mps3_board.sse300.VM_BANK_SIZE=2048
+
+Date:  2023/07/13 17:31:06 GMT
+Build: 11.22:20
+
+===============================================================================
+END
+===============================================================================

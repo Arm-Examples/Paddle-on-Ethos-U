@@ -1,0 +1,144 @@
+=============================================================================================
+Fast Models 11.27 Release Notes for Corstone SSE-320 Reference Design FVP
+=============================================================================================
+
+The FVP implements the Corstone SSE-320 system as specified by the
+"Fixed Virtual Platforms for Arm Corstone SSE-320 Reference Guide"
+architecture and system specifications.
+
+---------------------------------------------------------------------------------------------
+New features in this release
+---------------------------------------------------------------------------------------------
+
+None
+
+--------------------------------------------------------------------------------------------
+Changes/issues fixed in this release
+--------------------------------------------------------------------------------------------
+
+None
+
+--------------------------------------------------------------------------------
+Quality level
+--------------------------------------------------------------------------------
+
+This is a public release of Corstone SSE-320 FVP.
+
+--------------------------------------------------------------------------------
+Known issues
+--------------------------------------------------------------------------------
+
+None
+
+--------------------------------------------------------------------------------
+Running the model
+--------------------------------------------------------------------------------
+
+Refer to the Fast Models User Guide (1) for general instructions on running FVPs.
+Refer to the Fast Models Fixed Virtual Platforms Reference Guide (2) for
+information on the compute subsystem and how to work with it.
+
+This model is intended to be used with the Arm reference design software package.
+
+--------------------------------------------------------------------------------
+Parameters
+--------------------------------------------------------------------------------
+
+The full set of parameters and their descriptions can be seen by running the
+model with the --list-params argument. Most Cortex-M85 core parameters share
+their names with a corresponding RTL configuration parameter.
+
+For those new to TrustZone for Cortex-M85, however, it may be useful to run the
+model with some of these features disabled. Running the model with the following
+parameters disables the IDAU and the Security Gates:
+
+FVP_Corstone_SSE-320 --parameter mps4_board.subsystem.idau.NUM_IDAU_REGION=0 \
+                     --parameter mps4_board.DISABLE_GATING=1
+
+-------------------------------------------------------------------------------
+CMSDK UART RX overrun modes
+-------------------------------------------------------------------------------
+
+Two new modes (0 and 1) have been added to control how the UART model behaves
+under an RX OVERRUN condition. The following modes can be set using the
+parameter `rx_overrun_mode`:
+
+ - 0: Never : Never block the transfer of the next character into the RX
+              FIFO even if it means losing multiple characters. This is
+              the real hardware behavior and should be useful to
+              evaluate software design i.e. can we service the UART fast
+              enough?
+              In this mode, as in the HW, the RX_OVERRUN flag serves only
+              to alert software to the fact that characters have been lost and
+              that some sort of corrective action, or recovery procedure
+              may be required.
+ - 1: Before: Pause transfer of characters into UART RX FIFO before any
+              characters are lost. This makes the serial connection
+              lossless even if the software does not make any attempt to service
+              the UART in a timely fashion.
+ - 2: After : Pause the transfer of characters into the UART RX FIFO after
+              the first characters are lost due to overrun. This is the
+              default behavior.
+
+In mode 1 the transfer of characters can be resumed by reading a
+character from the DATA register (i.e. no special action required by
+SW, 'it just works')
+
+In mode 2 clearing the RX_OVERRUN 'flag' will resume the transfer of
+characters. This requires the software to write to the STATE or INT register
+to clear the flag. Precisely one character will have been lost. This
+is the behavior of the UART prior to this release and the default.
+
+--------------------------------------------------------------------------------
+Prerequisites for Virtual Streaming Interface
+--------------------------------------------------------------------------------
+
+On Windows 10 and 11:
+Install Python 3.9.11. If Python 3.9.11 installation path is not located in default
+"Program Files" or "AppData", environment variable PYTHONHOME should be set as follows:
+set PYTHONHOME=<Installation Path>
+For example:
+set PYTHONHOME=c:\python3.9.11
+
+Ubuntu 20.04, 22.04 and 23.04:
+
+Execute the following command to use Python from the FVP install
+source $FVP_INSTALL_PATH/scripts/runtime.sh
+
+or
+
+Execute the following commands to build and install Python 3.9.18.
+
+sudo apt-get update
+sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev
+libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xzutils
+tk-dev liblzma-dev tk-dev
+wget https://www.python.org/ftp/python/3.9.18/Python-3.9.18.tgz
+tar xzf Python-3.9.18.tgz
+cd Python-3.9.18
+./configure --enable-optimizations --prefix=/opt/python/3.9.18/
+make -j "$(nproc)"
+sudo make altinstall
+
+Before running the FVP, set the following environment variable:
+export PYTHONHOME=/opt/python/3.9.18
+
+--------------------------------------------------------------------------------
+References
+--------------------------------------------------------------------------------
+
+    (1) Fast Models User Guide page
+    https://developer.arm.com/documentation/100965/latest
+
+    (2) Fast Models Fixed Virtual Platforms (FVP) Reference Guide
+    https://developer.arm.com/documentation/100966/latest
+
+    (3) Arm CoreLink DMA-350 Controller Technical Reference Manual
+    https://developer.arm.com/documentation/102482/latest
+
+Date:  2024/09/24 23:42:43 GMT
+Build: 11.27:25
+
+===============================================================================
+END
+===============================================================================

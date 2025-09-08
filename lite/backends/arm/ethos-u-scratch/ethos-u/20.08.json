@@ -1,0 +1,38 @@
+{
+    "externals": [
+        {
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-software",
+            "path": "core_software",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-software",
+            "revision": "20.08"
+        },
+        {
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-core-driver",
+            "path": "core_software/core_driver",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-core-driver",
+            "revision": "20.08"
+        },
+        {
+            "path": "core_software/cmsis",
+            "fetchurl": "https://github.com/ARM-software/CMSIS_5.git",
+            "revision": "55a6a153cd8e208364db3502b6248392fdf59eaf"
+        },
+        {
+            "path": "core_software/tensorflow",
+            "fetchurl": "https://github.com/tensorflow/tensorflow",
+            "revision": "ff1ecf14de2b2728ca6d70ba7616700920b32c03"
+        },
+        {
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-linux-driver-stack",
+            "path": "linux_driver_stack",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-linux-driver-stack",
+            "revision": "20.08"
+        },
+        {
+            "pushurl": "ssh://review.mlplatform.org:29418/ml/ethos-u/ethos-u-vela",
+            "path": "vela",
+            "fetchurl": "https://review.mlplatform.org/ml/ethos-u/ethos-u-vela",
+            "revision": "1.2.0"
+        }
+    ]
+}
