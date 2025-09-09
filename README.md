@@ -1,4 +1,4 @@
-# Get Started with running PaddlePaddle models on rm® Ethos™-U processor.
+# Get Started with running PaddlePaddle models on Arm® Ethos™-U processor.
 
 We are working on improving the documents and more deployment technical guide of supported models.   
 
