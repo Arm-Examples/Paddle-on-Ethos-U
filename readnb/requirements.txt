@@ -9,4 +9,3 @@ opencv-python
 shapely
 matplotlib
 scipy
-tosa_serialization_lib
